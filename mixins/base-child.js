@@ -48,12 +48,9 @@ const baseChild = {
    */
   createMetafield(parentId, params) {
     // rearrange and override arguments
-    this.parentName = this.name;
-    this.name = 'metafield';
-    this.key = 'metafield';
-
-    const url = this.buildUrl(parentId);
-    return this.shopify.request(url, 'POST', this.key, params);
+    var path = '/admin/variants/' + parentId + '/metafields.json';
+    const url = assign({ path }, this.shopify.baseUrl);
+    return this.shopify.request(url, 'POST', 'metafield', params);
   },
 
   /**
