@@ -57,7 +57,7 @@ const baseChild = {
     var path = '/admin/variants/' + parentId + '/metafields.json';
     if (params) path += '?' + qs.stringify(params, { arrayFormat: 'brackets' });
     const url = assign({ path }, this.shopify.baseUrl);
-    return this.shopify.request(url, 'GET', 'metafield');
+    return this.shopify.request(url, 'GET', 'metafields');
   },
 
   /**
