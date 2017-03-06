@@ -52,6 +52,12 @@ const baseChild = {
     const url = assign({ path }, this.shopify.baseUrl);
     return this.shopify.request(url, 'POST', 'metafield', params);
   },
+  getMetafield(parentId, params) {
+    // rearrange and override arguments
+    var path = '/admin/variants/' + parentId + '/metafields.json';
+    const url = assign({ path }, this.shopify.baseUrl);
+    return this.shopify.request(url, 'GET', 'metafield', params);
+  },
 
   /**
    * Deletes a record.
