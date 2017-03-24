@@ -4,6 +4,7 @@ const EventEmitter = require('events').EventEmitter;
 const camelCase = require('lodash/camelCase');
 const defaults = require('lodash/defaults');
 const assign = require('lodash/assign');
+//const valvelet = require('valvelet');
 const path = require('path');
 const got = require('got');
 const fs = require('fs');
@@ -15,10 +16,49 @@ Create bucket
 */
 const TokenBucket = require('tokenbucket');
 var bucket = new TokenBucket({
-  size: 40,
+  size: 38,
   tokensToAddPerInterval: 2,
   interval: 1000
 })
+//tokensLeft can be set
+function valvelet(fn, limit, interval, size) {
+  const queue = [];
+  let count = 0;
+
+  size || (size = Math.pow(2, 32) - 1);
+
+  function timeout() {
+    count--;
+    if (queue.length) shift();
+  }
+
+  function shift() {
+    // do we have tokens?
+    bucket.removeTokens(1).then(function(remainingTokens) {
+      console.log('Tokens left: ' + remainingTokens);
+
+      count++;
+      const data = queue.shift();
+      data[2](fn.apply(data[0], data[1]));
+
+    }).catch(function (err) {
+      console.log(err)
+    });
+
+    setTimeout(timeout, interval);
+  }
+
+  return function limiter() {
+    const args = arguments;
+
+    return new Promise((resolve, reject) => {
+      if (queue.length === size) return reject(new Error('Queue is full'));
+
+      queue.push([this, args, resolve]);
+      if (count < limit) shift();
+    });
+  };
+}
 
 /**
  * Creates a Shopify instance.
@@ -61,10 +101,10 @@ function Shopify(options) {
     protocol: 'https:'
   };
 
-  //if (options.autoLimit) {
-  //  const conf = assign({ calls: 2, interval: 1000 }, options.autoLimit);
-  //  this.request = valvelet(this.request, conf.calls, conf.interval);
-  //}
+  if (options.autoLimit) {
+    const conf = assign({ calls: 2, interval: 1000 }, options.autoLimit);
+    this.request = valvelet(this.request, conf.calls, conf.interval);
+  }
 }
 
 Shopify.prototype = Object.create(EventEmitter.prototype);
@@ -99,41 +139,37 @@ Shopify.prototype.updateLimits = function updateLimits(header) {
  * @private
  */
 Shopify.prototype.request = function request(url, method, key, params) {
-  bucket.removeTokens(1).then(function(remainingTokens) {
-    const options = assign({
-      headers: { 'User-Agent': `${pkg.name}/${pkg.version}` },
-      timeout: Shopify.options.timeout,
-      json: true,
-      retries: 0,
-      method
-    }, url);
+  const options = assign({
+    headers: { 'User-Agent': `${pkg.name}/${pkg.version}` },
+    timeout: this.options.timeout,
+    json: true,
+    retries: 0,
+    method
+  }, url);
 
-    if (Shopify.options.accessToken) {
-      options.headers['X-Shopify-Access-Token'] = Shopify.options.accessToken;
-    }
+  if (this.options.accessToken) {
+    options.headers['X-Shopify-Access-Token'] = this.options.accessToken;
+  }
 
-    if (params) {
-      const body = key ? { [key]: params } : params;
+  if (params) {
+    const body = key ? { [key]: params } : params;
 
-      options.headers['Content-Type'] = 'application/json';
-      options.body = JSON.stringify(body);
-    }
+    options.headers['Content-Type'] = 'application/json';
+    options.body = JSON.stringify(body);
+  }
 
-    return got(options).then(res => {
-      const body = res.body;
+  return got(options).then(res => {
+    const body = res.body;
 
-      Shopify.updateLimits(res.headers['x-shopify-shop-api-call-limit']);
+    this.updateLimits(res.headers['x-shopify-shop-api-call-limit']);
 
-      if (key) return body[key];
-      return body || {};
-    }, err => {
-      Shopify.updateLimits(
-        err.response && err.response.headers['x-shopify-shop-api-call-limit']
-      );
+    if (key) return body[key];
+    return body || {};
+  }, err => {
+    this.updateLimits(
+      err.response && err.response.headers['x-shopify-shop-api-call-limit']
+    );
 
-      return Promise.reject(err);
-    });
-  }).catch(function (err) {
     return Promise.reject(err);
   });
 };
