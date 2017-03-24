@@ -102,14 +102,14 @@ Shopify.prototype.request = function request(url, method, key, params) {
   bucket.removeTokens(1).then(function(remainingTokens) {
     const options = assign({
       headers: { 'User-Agent': `${pkg.name}/${pkg.version}` },
-      timeout: this.options.timeout,
+      timeout: Shopify.options.timeout,
       json: true,
       retries: 0,
       method
     }, url);
 
-    if (this.options.accessToken) {
-      options.headers['X-Shopify-Access-Token'] = this.options.accessToken;
+    if (Shopify.options.accessToken) {
+      options.headers['X-Shopify-Access-Token'] = Shopify.options.accessToken;
     }
 
     if (params) {
@@ -122,12 +122,12 @@ Shopify.prototype.request = function request(url, method, key, params) {
     return got(options).then(res => {
       const body = res.body;
 
-      this.updateLimits(res.headers['x-shopify-shop-api-call-limit']);
+      Shopify.updateLimits(res.headers['x-shopify-shop-api-call-limit']);
 
       if (key) return body[key];
       return body || {};
     }, err => {
-      this.updateLimits(
+      Shopify.updateLimits(
         err.response && err.response.headers['x-shopify-shop-api-call-limit']
       );
 
