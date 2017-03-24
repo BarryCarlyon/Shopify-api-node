@@ -134,7 +134,7 @@ Shopify.prototype.request = function request(url, method, key, params) {
       return Promise.reject(err);
     });
   }).catch(function (err) {
-    console.log(err)
+    return Promise.reject(err);
   });
 };
 
