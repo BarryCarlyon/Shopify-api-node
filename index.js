@@ -1,5 +1,6 @@
 'use strict';
 
+const EventEmitter = require('events').EventEmitter;
 const camelCase = require('lodash/camelCase');
 const defaults = require('lodash/defaults');
 const assign = require('lodash/assign');
@@ -57,6 +58,8 @@ function Shopify(options) {
   }
 }
 
+Shopify.prototype = Object.create(EventEmitter.prototype);
+
 /**
  * Updates API call limits.
  *
@@ -72,6 +75,8 @@ Shopify.prototype.updateLimits = function updateLimits(header) {
   callLimits.remaining = limits[1] - limits[0];
   callLimits.current = limits[0];
   callLimits.max = limits[1];
+
+  this.emit('updateLimits', callLimits);
 };
 
 /**
