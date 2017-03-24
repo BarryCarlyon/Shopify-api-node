@@ -4,12 +4,60 @@ const EventEmitter = require('events').EventEmitter;
 const camelCase = require('lodash/camelCase');
 const defaults = require('lodash/defaults');
 const assign = require('lodash/assign');
-const valvelet = require('valvelet');
+//const valvelet = require('valvelet');
 const path = require('path');
 const got = require('got');
 const fs = require('fs');
 
 const pkg = require('./package');
+
+/**
+Create bucket
+*/
+const TokenBucket = require('TokenBucket');
+var bucket = new TokenBucket({
+  size: 40,
+  tokensToAddPerInterval: 2,
+  interval: 1000
+})
+//tokensLeft can be set
+function valvelet(fn, limit, interval, size) {
+  const queue = [];
+  let count = 0;
+
+  size || (size = Math.pow(2, 32) - 1);
+
+  function timeout() {
+    count--;
+    if (queue.length) shift();
+  }
+
+  function shift() {
+    // do we have tokens?
+    bucket.removeTokens(1).then(function(remainingTokens) {
+      console.log('Tokens left: ' + remainingTokens);
+
+      count++;
+      const data = queue.shift();
+      data[2](fn.apply(data[0], data[1]));
+      setTimeout(timeout, interval);
+
+    }).catch(function (err) {
+      console.log(err)
+    });
+  }
+
+  return function limiter() {
+    const args = arguments;
+
+    return new Promise((resolve, reject) => {
+      if (queue.length === size) return reject(new Error('Queue is full'));
+
+      queue.push([this, args, resolve]);
+      if (count < limit) shift();
+    });
+  };
+}
 
 /**
  * Creates a Shopify instance.
