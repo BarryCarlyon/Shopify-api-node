@@ -14,7 +14,7 @@ const pkg = require('./package');
 /**
 Create bucket
 */
-const TokenBucket = require('TokenBucket');
+const TokenBucket = require('tokenbucket');
 var bucket = new TokenBucket({
   size: 40,
   tokensToAddPerInterval: 2,
