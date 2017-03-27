@@ -68,7 +68,7 @@ Shopify.prototype = Object.create(EventEmitter.prototype);
  * @param {String} header X-Shopify-Shop-Api-Call-Limit header
  * @private
  */
-Shopify.prototype.updateLimits = function updateLimits(header) {
+Shopify.prototype.updateLimits = function updateLimits(header, remainingTokens) {
   if (!header) return;
 
   const limits = header.split('/').map(Number);
@@ -77,6 +77,10 @@ Shopify.prototype.updateLimits = function updateLimits(header) {
   callLimits.remaining = limits[1] - limits[0];
   callLimits.current = limits[0];
   callLimits.max = limits[1];
+
+  if (remainingTokens) {
+    callLimits.internal = remainingTokens;
+  }
 
   this.emit('updateLimits', callLimits);
 };
@@ -115,7 +119,7 @@ Shopify.prototype.request = function request(url, method, key, params) {
     return got(options).then(res => {
       const body = res.body;
 
-      this.updateLimits(res.headers['x-shopify-shop-api-call-limit']);
+      this.updateLimits(res.headers['x-shopify-shop-api-call-limit'], remainingTokens);
 
       if (key) return body[key];
       return body || {};
