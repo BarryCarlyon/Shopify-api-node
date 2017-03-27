@@ -18,9 +18,10 @@ const TokenBucket = require('tokenbucket');
 var bucket = new TokenBucket({
   size: 38,
   tokensToAddPerInterval: 2,
-  interval: 1000
+  interval: 1000,
+  spread: false
 })
-//tokensLeft can be set
+
 function valvelet(fn, limit, interval, size) {
   const queue = [];
   let count = 0;
@@ -34,21 +35,28 @@ function valvelet(fn, limit, interval, size) {
 
   function shift() {
     // do we have tokens?
-    bucket.removeTokens(1).then(function(remainingTokens) {
-      console.log('Tokens left: ' + remainingTokens);
-
-      count++;
+    if (queue.length > 0) {
       const data = queue.shift();
-      data[2](fn.apply(data[0], data[1]));
-
-    }).catch(function (err) {
-      console.log(err)
-    });
+      sendToBucket(data);
+    }
 
     setTimeout(timeout, interval);
   }
 
+  function sendToBucket(data) {
+      bucket.removeTokens(1).then(function(remainingTokens) {
+        console.log('Tokens left: ' + remainingTokens);
+
+        count++;
+        data[2](fn.apply(data[0], data[1]));
+
+      }).catch(function (err) {
+        console.log(err)
+      });
+  }
+
   return function limiter() {
+    console.log('limiter');
     const args = arguments;
 
     return new Promise((resolve, reject) => {
@@ -124,6 +132,9 @@ Shopify.prototype.updateLimits = function updateLimits(header) {
   callLimits.remaining = limits[1] - limits[0];
   callLimits.current = limits[0];
   callLimits.max = limits[1];
+
+  //bucket.tokensLeft = callLimits.remaining;
+  //bucket.addTokens(callLimits.remaining / 2);
 
   this.emit('updateLimits', callLimits);
 };
