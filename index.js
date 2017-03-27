@@ -4,69 +4,12 @@ const EventEmitter = require('events').EventEmitter;
 const camelCase = require('lodash/camelCase');
 const defaults = require('lodash/defaults');
 const assign = require('lodash/assign');
-//const valvelet = require('valvelet');
+const TokenBucket = require('tokenbucket');
 const path = require('path');
 const got = require('got');
 const fs = require('fs');
 
 const pkg = require('./package');
-
-/**
-Create bucket
-*/
-const TokenBucket = require('tokenbucket');
-var bucket = new TokenBucket({
-  size: 38,
-  tokensToAddPerInterval: 2,
-  interval: 1000,
-  spread: false
-})
-
-function valvelet(fn, limit, interval, size) {
-  const queue = [];
-  let count = 0;
-
-  size || (size = Math.pow(2, 32) - 1);
-
-  function timeout() {
-    count--;
-    if (queue.length) shift();
-  }
-
-  function shift() {
-    // do we have tokens?
-    if (queue.length > 0) {
-      const data = queue.shift();
-      sendToBucket(data);
-    }
-
-    setTimeout(timeout, interval);
-  }
-
-  function sendToBucket(data) {
-      bucket.removeTokens(1).then(function(remainingTokens) {
-        console.log('Tokens left: ' + remainingTokens);
-
-        count++;
-        data[2](fn.apply(data[0], data[1]));
-
-      }).catch(function (err) {
-        console.log(err)
-      });
-  }
-
-  return function limiter() {
-    console.log('limiter');
-    const args = arguments;
-
-    return new Promise((resolve, reject) => {
-      if (queue.length === size) return reject(new Error('Queue is full'));
-
-      queue.push([this, args, resolve]);
-      if (count < limit) shift();
-    });
-  };
-}
 
 /**
  * Creates a Shopify instance.
@@ -92,7 +35,7 @@ function Shopify(options) {
     throw new Error('Missing or invalid options');
   }
 
-  this.options = defaults(options, { timeout: 60000 });
+  this.options = defaults(options, { timeout: 60000, apiCallLimit: 38, apiRefresh: 2, apiRefreshTime: 1000 });
 
   //
   // API call limits, updated with each request.
@@ -109,25 +52,12 @@ function Shopify(options) {
     protocol: 'https:'
   };
 
-  //if (options.autoLimit) {
-  //  const conf = assign({ calls: 2, interval: 1000 }, options.autoLimit);
-  //  this.request = valvelet(this.request, conf.calls, conf.interval);
-  //  //this.request = ShopifyLimiter(this.request);
-  //}
-}
-
-function ShopifyLimiter(fn) {
-  return function limiter() {
-    const args = arguments;
-
-    return new Promise((resolve, reject) => {
-      bucket.removeTokens(1).then(function(remainingTokens) {
-        resolve(fn.apply(this, args));
-      }).catch(function (err) {
-        reject(new Error(err));
-      });
-    });
-  }
+  bucket = new TokenBucket({
+    size: this.options.apiCallLimit,
+    tokensToAddPerInterval: this.options.apiRefresh,
+    interval: this.options.apiRefreshTime,
+    spread: false
+  })
 }
 
 Shopify.prototype = Object.create(EventEmitter.prototype);
@@ -147,9 +77,6 @@ Shopify.prototype.updateLimits = function updateLimits(header) {
   callLimits.remaining = limits[1] - limits[0];
   callLimits.current = limits[0];
   callLimits.max = limits[1];
-
-  //bucket.tokensLeft = callLimits.remaining;
-  //bucket.addTokens(callLimits.remaining / 2);
 
   this.emit('updateLimits', callLimits);
 };
@@ -202,23 +129,6 @@ Shopify.prototype.request = function request(url, method, key, params) {
   }).catch(function (err) {
     return Promise.reject(err);
   });
-
-/*
-  return got(options).then(res => {
-    const body = res.body;
-
-    this.updateLimits(res.headers['x-shopify-shop-api-call-limit']);
-
-    if (key) return body[key];
-    return body || {};
-  }, err => {
-    this.updateLimits(
-      err.response && err.response.headers['x-shopify-shop-api-call-limit']
-    );
-
-    return Promise.reject(err);
-  });
-*/
 };
 
 //
