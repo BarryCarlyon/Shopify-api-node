@@ -73,7 +73,7 @@ const shopify = new Shopify({
 
 Shopify employs a Leaky Bucket alogrithm to [rate limit][api-call-limit] it's API. This stands at a Max call limit of 40 API requests, replenishing at two API requests a second. This means you can peak load at 40 API requests and then back off running two API requests a second thereafter as rate limit becomes available.
 
-The three values that control this can be indepedantly set in the options as needed. In testing, setting the call limit to 40 would occasionally trip the rate limiter, so 38 is set as the default to give a little head room.
+The three values (which are passed to [tokenbucket][tokenbucket]) that control this can be indepedantly set in the options as needed. In testing, setting the call limit to 40 would occasionally trip the rate limiter, so 38 is set as the default to give a little head room.
 
 ### `shopify.callLimits`
 
@@ -436,3 +436,4 @@ Used in our live products: [MoonMail][moonmail] & [MONEI][monei]
 [monei]: https://monei.net/?utm_source=shopify-api-node-module-repo-readme&utm_medium=click&utm_campaign=github
 [socket-io]: https://socket.io/
 [pm2]: https://github.com/Unitech/pm2
+[tokenbucket]: https://github.com/jesucarr/tokenbucket
