@@ -52,7 +52,7 @@ function Shopify(options) {
     protocol: 'https:'
   };
 
-  bucket = new TokenBucket({
+  this.bucket = new TokenBucket({
     size: this.options.apiCallLimit,
     tokensToAddPerInterval: this.options.apiRefresh,
     interval: this.options.apiRefreshTime,
@@ -111,7 +111,7 @@ Shopify.prototype.request = function request(url, method, key, params) {
     options.body = JSON.stringify(body);
   }
 
-  return bucket.removeTokens(1).then(remainingTokens => {
+  return this.bucket.removeTokens(1).then(remainingTokens => {
     return got(options).then(res => {
       const body = res.body;
 
