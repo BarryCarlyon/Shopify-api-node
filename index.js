@@ -109,9 +109,24 @@ function Shopify(options) {
     protocol: 'https:'
   };
 
-  if (options.autoLimit) {
-    const conf = assign({ calls: 2, interval: 1000 }, options.autoLimit);
-    this.request = valvelet(this.request, conf.calls, conf.interval);
+  //if (options.autoLimit) {
+  //  const conf = assign({ calls: 2, interval: 1000 }, options.autoLimit);
+  //  this.request = valvelet(this.request, conf.calls, conf.interval);
+  //  //this.request = ShopifyLimiter(this.request);
+  //}
+}
+
+function ShopifyLimiter(fn) {
+  return function limiter() {
+    const args = arguments;
+
+    return new Promise((resolve, reject) => {
+      bucket.removeTokens(1).then(function(remainingTokens) {
+        resolve(fn.apply(this, args));
+      }).catch(function (err) {
+        reject(new Error(err));
+      });
+    });
   }
 }
 
@@ -169,6 +184,26 @@ Shopify.prototype.request = function request(url, method, key, params) {
     options.body = JSON.stringify(body);
   }
 
+  return bucket.removeTokens(1).then(remainingTokens => {
+    return got(options).then(res => {
+      const body = res.body;
+
+      this.updateLimits(res.headers['x-shopify-shop-api-call-limit']);
+
+      if (key) return body[key];
+      return body || {};
+    }, err => {
+      this.updateLimits(
+        err.response && err.response.headers['x-shopify-shop-api-call-limit']
+      );
+
+      return Promise.reject(err);
+    });
+  }).catch(function (err) {
+    return Promise.reject(err);
+  });
+
+/*
   return got(options).then(res => {
     const body = res.body;
 
@@ -183,6 +218,7 @@ Shopify.prototype.request = function request(url, method, key, params) {
 
     return Promise.reject(err);
   });
+*/
 };
 
 //
