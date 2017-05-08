@@ -1,6 +1,5 @@
 'use strict';
 
-const EventEmitter = require('events').EventEmitter;
 const camelCase = require('lodash/camelCase');
 const defaults = require('lodash/defaults');
 const assign = require('lodash/assign');
@@ -57,10 +56,8 @@ function Shopify(options) {
     tokensToAddPerInterval: this.options.apiRefresh,
     interval: this.options.apiRefreshTime,
     spread: false
-  })
+  });
 }
-
-Shopify.prototype = Object.create(EventEmitter.prototype);
 
 /**
  * Updates API call limits.
@@ -79,10 +76,22 @@ Shopify.prototype.updateLimits = function updateLimits(header, remainingTokens) 
   callLimits.max = limits[1];
 
   if (remainingTokens) {
-    callLimits.internal = remainingTokens;
+    callLimits.internal = Math.floor(remainingTokens);
   }
 
-  this.emit('updateLimits', callLimits);
+  if (this.onUpdateLimits) {
+    this.onUpdateLimits(callLimits);
+  }
+};
+Shopify.prototype.onUpdateLimits = false;
+/**
+ * Emits updated call limits.
+ *
+ * @param {Object} the callLimits
+ * @private
+ */
+Shopify.prototype.onUpdateLimits = function onUpdateLimits(callLimits) {
+  return callLimits;
 };
 
 /**

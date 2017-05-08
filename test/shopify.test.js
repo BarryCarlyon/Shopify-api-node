@@ -239,6 +239,7 @@ describe('Shopify', () => {
           expect(shopify.callLimits).to.deep.equal({
             remaining: 36,
             current: 4,
+            internal: 0,
             max: 40
           });
         });
@@ -257,6 +258,7 @@ describe('Shopify', () => {
         expect(shopify.callLimits).to.deep.equal({
           remaining: 35,
           current: 5,
+          internal: 0,
           max: 40
         });
       });
@@ -272,6 +274,7 @@ describe('Shopify', () => {
           expect(shopify.callLimits).to.deep.equal({
             remaining: 35,
             current: 5,
+            internal: 0,
             max: 40
           });
         });
