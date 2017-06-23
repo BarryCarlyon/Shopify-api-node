@@ -1,6 +1,6 @@
 {
   "name": "shopify-api-node",
-  "version": "2.5.0",
+  "version": "2.6.0",
   "description": "Shopify API bindings for Node.js",
   "main": "index.js",
   "directories": {
@@ -15,14 +15,14 @@
     "index.js"
   ],
   "dependencies": {
-    "got": "^6.1.2",
+    "got": "^7.0.0",
     "lodash": "^4.6.0",
     "qs": "^6.1.0",
     "stopcock": "^1.0.0"
   },
   "devDependencies": {
-    "chai": "^3.5.0",
-    "eslint": "^3.0.1",
+    "chai": "^4.0.0",
+    "eslint": "^4.0.0",
     "istanbul": "^0.4.2",
     "mocha": "^3.0.1",
     "nock": "^9.0.0",

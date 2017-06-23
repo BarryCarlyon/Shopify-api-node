@@ -137,6 +137,39 @@ shopify.order.list({ limit: 5 })
   .catch(err => console.error(err));
 ```
 
+#### Metafields
+
+Shopify allows for adding metafields to various resources. You can use the
+`owner_resource` and `owner_id` properties to work with metafields that belong
+to a particular resource as shown in the examples below.
+
+Get metafields that belong to a product:
+
+```js
+shopify.metafield.list({
+  metafield: { owner_resource: 'product', owner_id: 632910392 }
+}).then(
+  metafields => console.log(metafields),
+  err => console.error(err)
+);
+```
+
+Create a new metafield for a product:
+
+```js
+shopify.metafield.create({
+  key: 'warehouse',
+  value: 25,
+  value_type: 'integer',
+  namespace: 'inventory',
+  owner_resource: 'product',
+  owner_id: 632910392
+}).then(
+  metafield => console.log(metafield),
+  err => console.error(err)
+);
+```
+
 ### Available resources and methods
 
 - apiPermission
@@ -193,9 +226,9 @@ shopify.order.list({ limit: 5 })
   - `get(id[, params])`
   - `list([params])`
 - collectionListing
-  - `get(applicationId, id)`
-  - `list(applicationId[, params])`
-  - `productIds(applicationId, id)`
+  - `get(id)`
+  - `list([params])`
+  - `productIds(id)`
 - comment
   - `approve(id)`
   - `count([params])`
@@ -223,6 +256,7 @@ shopify.order.list({ limit: 5 })
   - `update(id, params)`
 - customer
   - `accountActivationUrl(id)`
+  - `sendInvite(id[, params])`
   - `count()`
   - `create(params)`
   - `delete(id)`
@@ -253,6 +287,13 @@ shopify.order.list({ limit: 5 })
   - `enable(id)`
   - `get(id)`
   - `list([params])`
+- discountCode
+  - `create(priceRuleId, params)`
+  - `delete(priceRuleId, id)`
+  - `get(priceRuleId, id)`
+  - `list(priceRuleId)`
+  - `lookup(params)`
+  - `update(priceRuleId, id, params)`
 - draftOrder
   - `complete(id[, params])`
   - `count()`
@@ -343,6 +384,12 @@ shopify.order.list({ limit: 5 })
   - `list(checkoutToken)`
 - policy
   - `list([params])`
+- priceRule
+  - `create(params)`
+  - `delete(id)`
+  - `get(id)`
+  - `list([params])`
+  - `update(id, params)`
 - product
   - `count([params])`
   - `create(params)`
@@ -359,10 +406,10 @@ shopify.order.list({ limit: 5 })
   - `list(productId[, params])`
   - `update(productId, id, params)`
 - productListing
-  - `count(applicationId)`
-  - `get(applicationId, id)`
-  - `list(applicationId[, params])`
-  - `productIds(applicationId[, params])`
+  - `count()`
+  - `get(id)`
+  - `list([params])`
+  - `productIds([params])`
 - productVariant
   - `count(productId)`
   - `create(productId, params)`

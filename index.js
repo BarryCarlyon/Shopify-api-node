@@ -28,10 +28,10 @@ const pkg = require('./package');
 function Shopify(options) {
   if (!(this instanceof Shopify)) return new Shopify(options);
   if (
-      !options
-    || !options.shopName
-    || !options.accessToken && (!options.apiKey || !options.password)
-    || options.accessToken && (options.apiKey || options.password)
+    !options ||
+    !options.shopName ||
+    !options.accessToken && (!options.apiKey || !options.password) ||
+    options.accessToken && (options.apiKey || options.password)
   ) {
     throw new Error('Missing or invalid options');
   }
@@ -49,7 +49,6 @@ function Shopify(options) {
   };
 
   this.baseUrl = {
-    auth: !options.accessToken && `${options.apiKey}:${options.password}`,
     hostname: `${options.shopName}.myshopify.com`,
     protocol: 'https:'
   };
@@ -106,13 +105,18 @@ Shopify.prototype.request = function request(url, method, key, params) {
 
   if (this.options.accessToken) {
     options.headers['X-Shopify-Access-Token'] = this.options.accessToken;
+  } else {
+    const auth = Buffer.from(`${this.options.apiKey}:${this.options.password}`)
+      .toString('base64');
+
+    options.headers.Authorization = `Basic ${auth}`;
   }
 
   if (params) {
     const body = key ? { [key]: params } : params;
 
     options.headers['Content-Type'] = 'application/json';
-    options.body = JSON.stringify(body);
+    options.body = body;
   }
 
   return got(options).then(res => {
