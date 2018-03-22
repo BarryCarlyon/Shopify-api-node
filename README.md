@@ -42,11 +42,6 @@ configuration options.
   with the `apiKey` and `password` options. If you are looking for a premade
   solution to obtain an access token, take a look at the [shopify-token][]
   module.
-<<<<<<< HEAD
-- `apiCallLimit` - Optional - Default: 38, 2 less than Shopify Max. to account for some timing irregularites
-- `apiRefresh` - Optional - Defaut: 2
-- `apiRefreshTime` - Optional - Default: 1000
-=======
 - `autoLimit` - Optional - This option allows you to regulate the request rate
   in order to avoid hitting the [rate limit][api-call-limit]. Requests are
   limited using the token bucket algorithm. Accepted values are a boolean or a
@@ -56,10 +51,9 @@ configuration options.
   specifies a limit of 2 requests per second with a burst of 35 requests. When
   set to `true` requests are limited as specified in the above example.
   Defaults to `false`.
->>>>>>> master
-- `timeout` - Optional - A number that specifies the milliseconds to wait for
-  the server to send response headers before aborting the request. Defaults to
-  `60000`, or 1 minute.
+- `timeout` - Optional - The number of milliseconds before the request times
+  out. If the request takes longer than `timeout`, it will be aborted. Defaults
+  to `60000`, or 1 minute.
 
 #### Return value
 
@@ -80,12 +74,6 @@ const shopify = new Shopify({
   password: 'your-app-password'
 });
 ```
-
-#### Shopify API Limits
-
-Shopify employs a Leaky Bucket alogrithm to [rate limit][api-call-limit] it's API. This stands at a Max call limit of 40 API requests, replenishing at two API requests a second. This means you can peak load at 40 API requests and then back off running two API requests a second thereafter as rate limit becomes available.
-
-The three values (which are passed to [tokenbucket][tokenbucket]) that control this can be indepedantly set in the options as needed. In testing, setting the call limit to 40 would occasionally trip the rate limiter, so 38 is set as the default to give a little head room.
 
 ### `shopify.callLimits`
 
@@ -108,14 +96,6 @@ argument.
 shopify.on('callLimits', limits => console.log(limits));
 ```
 
-When the callLimits are updated the event `updateLimits` is emitted with the above JS Object passed. Usfull to pass on to [socket.io][socket-io] or [PM2][pm2] or similar to monitoring.
-
-```js
-shopify.on('updateLimits', function(limits) {
-  console.log(limits);
-})
-```
-
 ### Resources
 
 Every resource is accessed via your `shopify` instance:
@@ -126,7 +106,7 @@ const shopify = new Shopify({
   accessToken: 'your-oauth-token'
 });
 
-// shopify.<resouce_name>.<method_name>
+// shopify.<resource_name>.<method_name>
 ```
 
 Each method returns a `Promise` that resolves with the result:
@@ -175,7 +155,7 @@ shopify.metafield.create({
 - apiPermission
   - `delete()`
 - applicationCharge
-  - `activate(id, params)`
+  - `activate(id[, params])`
   - `create(params)`
   - `get(id[, params])`
   - `list([params])`
@@ -256,13 +236,14 @@ shopify.metafield.create({
   - `update(id, params)`
 - customer
   - `accountActivationUrl(id)`
-  - `sendInvite(id[, params])`
   - `count()`
   - `create(params)`
   - `delete(id)`
   - `get(id[, params])`
   - `list([params])`
+  - `orders(id)`
   - `search(params)`
+  - `sendInvite(id[, params])`
   - `update(id, params)`
 - customerAddress
   - `create(customerId, params)`
@@ -280,13 +261,6 @@ shopify.metafield.create({
   - `get(id[, params])`
   - `list([params])`
   - `update(id, params)`
-- discount
-  - `create(params)`
-  - `delete(id)`
-  - `disable(id)`
-  - `enable(id)`
-  - `get(id)`
-  - `list([params])`
 - discountCode
   - `create(priceRuleId, params)`
   - `delete(priceRuleId, id)`
@@ -393,7 +367,6 @@ shopify.metafield.create({
 - product
   - `count([params])`
   - `create(params)`
-  - `createMetafield(id, params)`
   - `delete(id)`
   - `get(id[, params])`
   - `list([params])`
@@ -407,13 +380,14 @@ shopify.metafield.create({
   - `update(productId, id, params)`
 - productListing
   - `count()`
-  - `get(id)`
+  - `create(productId[, params])`
+  - `delete(productId)`
+  - `get(productId)`
   - `list([params])`
   - `productIds([params])`
 - productVariant
   - `count(productId)`
   - `create(productId, params)`
-  - `createMetafield(productVariantId, params)`
   - `delete(productId, id)`
   - `get(id[, params])`
   - `list(productId[, params])`
@@ -437,7 +411,10 @@ shopify.metafield.create({
   - `list([params])`
   - `update(id, params)`
 - refund
+  - `calculate(orderId, params)`
+  - `create(orderId, params)`
   - `get(orderId, id[, params])`
+  - `list(orderId[, params])`
 - report
   - `create(params)`
   - `delete(id)`
@@ -466,6 +443,10 @@ shopify.metafield.create({
   - `list([params])`
   - `order(id, params)`
   - `update(id, params)`
+- storefrontAccessToken
+  - `create(params)`
+  - `delete(id)`
+  - `list()`
 - theme
   - `create(params)`
   - `delete(id)`
@@ -512,9 +493,11 @@ for parameters details.
 
 (add yours!)
 
+* [Sample Node Express app by Shopify][sample-node-express-app-by-shopify]
 * [Wholesaler][wholesaler]
 * [Wholesaler & Customer Pricing][wholesaler-customer-pricing]
-* [Pricing Rules by MONEI][pricing-rules-by-monei]
+* [Wholesaler PRO][wholesaler-pro]
+* [Youtube Traffic][youtube-traffic]
 
 ## Supported by:
 
@@ -526,6 +509,7 @@ Used in our live products: [MoonMail][moonmail] & [MONEI][monei]
 
 [MIT](LICENSE)
 
+[sample-node-express-app-by-shopify]: https://github.com/Shopify/shopify-node-app
 [npm-shopify-api-node-badge]: https://img.shields.io/npm/v/shopify-api-node.svg
 [npm-shopify-api-node]: https://www.npmjs.com/package/shopify-api-node
 [travis-shopify-api-node-badge]: https://img.shields.io/travis/MONEI/Shopify-api-node/master.svg
@@ -547,12 +531,7 @@ Used in our live products: [MoonMail][moonmail] & [MONEI][monei]
 [microapps]: http://microapps.com/?utm_source=shopify-api-node-module-repo-readme&utm_medium=click&utm_campaign=github
 [moonmail]: https://moonmail.io/?utm_source=shopify-api-node-module-repo-readme&utm_medium=click&utm_campaign=github
 [monei]: https://monei.net/?utm_source=shopify-api-node-module-repo-readme&utm_medium=click&utm_campaign=github
-<<<<<<< HEAD
-[socket-io]: https://socket.io/
-[pm2]: https://github.com/Unitech/pm2
-[tokenbucket]: https://github.com/jesucarr/tokenbucket
-=======
 [wholesaler]: https://apps.shopify.com/wholesaler?ref=microapps
 [wholesaler-customer-pricing]: https://apps.shopify.com/wholesaler-pro-1?ref=microapps
-[pricing-rules-by-monei]: https://apps.shopify.com/pricing-rules-by-monei?ref=microapps
->>>>>>> master
+[wholesaler-pro]: https://apps.shopify.com/wholesaler-pro-2?ref=microapps
+[youtube-traffic]: https://apps.shopify.com/youtube-traffic?ref=microapps
